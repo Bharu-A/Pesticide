@@ -2,7 +2,7 @@ services:
   - type: web
     name: pesticide-store-locator
     env: php
-    buildCommand: ""
+    buildCommand: "echo 'Build complete'"
     startCommand: "php -S 0.0.0.0:10000 -t ."
     plan: free
     autoDeploy: true
