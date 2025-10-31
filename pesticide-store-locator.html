@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesticide Store Locator</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .search-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .search-box {
+            position: relative;
+        }
+        .search-box input {
+            border-radius: 50px;
+            padding: 15px 50px 15px 25px;
+            border: 2px solid #e0e0e0;
+            font-size: 16px;
+        }
+        .search-box input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .search-box button {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            border-radius: 50px;
+            padding: 10px 25px;
+            background: #667eea;
+            border: none;
+        }
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        .stores-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .map-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            height: 600px;
+        }
+        .map-container {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .map-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .store-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            display: none;
+        }
+        .store-card.show {
+            display: block;
+        }
+        .store-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .store-card.unbranded {
+            border-color: #28a745;
+            background: #f0fff4;
+            position: relative;
+        }
+        .store-card.unbranded::before {
+            content: '💰 BEST PRICE';
+            position: absolute;
+            top: -10px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .store-name {
+            color: #333;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .store-description {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .store-product {
+            background: #667eea;
+            color: white;
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+        .store-price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        .unbranded .store-price {
+            color: #28a745;
+        }
+        .store-details {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 15px 0;
+            font-size: 14px;
+            color: #666;
+        }
+        .store-detail-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-map {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            width: 100%;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+        .btn-map:hover {
+            background: #5568d3;
+            color: white;
+        }
+        .unbranded .btn-map {
+            background: #28a745;
+        }
+        .unbranded .btn-map:hover {
+            background: #218838;
+        }
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            display: none;
+        }
+        .no-results.show {
+            display: block;
+        }
+        @media (max-width: 992px) {
+            .content-wrapper {
+                grid-template-columns: 1fr;
+            }
+            .map-section {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-map-marked-alt"></i> Pesticide Store Locator</h1>
+            <p class="text-muted mb-0">Find the best deals on agricultural pesticides near you</p>
+        </div>
+
+        <div class="search-section">
+            <div class="search-box">
+                <input type="text" id="searchInput" class="form-control" placeholder="Search for pesticides (e.g., wheat, rice)...">
+                <button class="btn btn-primary" onclick="searchStores()">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+        </div>
+
+        <div class="content-wrapper">
+            <div class="stores-section">
+                <h4 class="mb-4"><i class="fas fa-store"></i> Available Stores</h4>
+                
+                <div id="noResults" class="no-results">
+                    <i class="fas fa-search" style="font-size: 48px; margin-bottom: 15px;"></i>
+                    <p>No stores found. Try searching for "wheat" or "rice"</p>
+                </div>
+
+                <div class="store-card" data-product="wheat" data-type="branded">
+                    <div class="store-product">Branded Wheat</div>
+                    <div class="store-name">Unity Crop Care - Agro Chemicals</div>
+                    <div class="store-description">Premium quality branded wheat pesticides with guaranteed results. Certified and tested products.</div>
+                    <div class="store-price">₹1,000</div>
+                    <div class="store-details">
+                        <div class="store-detail-item">
+                            <i class="fas fa-box"></i>
+                            <span>In Stock - Premium Quality</span>
+                        </div>
+                        <div class="store-detail-item">
+                            <i class="fas fa-phone"></i>
+                            <span>+91 98765 43210</span>
+                        </div>
+                        <div class="store-detail-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>Kempegowda Nagar, Bangalore</span>
+                        </div>
+                    </div>
+                    <a href="https://share.google/gwvNw7zFFCzwiu5Go" target="_blank" class="btn btn-map">
+                        <i class="fas fa-map-marker-alt"></i> Open in Google Maps
+                    </a>
+                </div>
+
+                <div class="store-card unbranded" data-product="wheat" data-type="unbranded">
+                    <div class="store-product">Unbranded Wheat</div>
+                    <div class="store-name">Pest Target Services</div>
+                    <div class="store-description">Affordable unbranded wheat pesticides. Quality products at competitive prices for budget-conscious farmers.</div>
+                    <div class="store-price">₹100</div>
+                    <div class="store-details">
+                        <div class="store-detail-item">
+                            <i class="fas fa-box"></i>
+                            <span>In Stock - Economy Range</span>
+                        </div>
+                        <div class="store-detail-item">
+                            <i class="fas fa-phone"></i>
+                            <span>+91 98765 43211</span>
+                        </div>
+                        <div class="store-detail-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>Mahalakshmi Layout, Bangalore</span>
+                        </div>
+                    </div>
+                    <a href="https://share.google/AUyDsGrZrj665T3BQ" target="_blank" class="btn btn-map">
+                        <i class="fas fa-map-marker-alt"></i> Open in Google Maps
+                    </a>
+                </div>
+
+                <div class="store-card" data-product="rice" data-type="branded">
+                    <div class="store-product">Branded Rice</div>
+                    <div class="store-name">PCI Pest Control Service</div>
+                    <div class="store-description">Top-tier branded rice pesticides from trusted manufacturers. Professional-grade solutions for optimal crop protection.</div>
+                    <div class="store-price">₹1,000</div>
+                    <div class="store-details">
+                        <div class="store-detail-item">
+                            <i class="fas fa-box"></i>
+                            <span>In Stock - Premium Quality</span>
+                        </div>
+                        <div class="store-detail-item">
+                            <i class="fas fa-phone"></i>
+                            <span>+91 98765 43212</span>
+                        </div>
+                        <div class="store-detail-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>Alkunte, Bangalore</span>
+                        </div>
+                    </div>
+                    <a href="https://share.google/kUT3NaDnnPdvgxD2W" target="_blank" class="btn btn-map">
+                        <i class="fas fa-map-marker-alt"></i> Open in Google Maps
+                    </a>
+                </div>
+
+                <div class="store-card unbranded" data-product="rice" data-type="unbranded">
+                    <div class="store-product">Unbranded Rice</div>
+                    <div class="store-name">Lakshmi Agencies - Davangere</div>
+                    <div class="store-description">Cost-effective unbranded rice pesticides. Great value for money without compromising on effectiveness.</div>
+                    <div class="store-price">₹100</div>
+                    <div class="store-details">
+                        <div class="store-detail-item">
+                            <i class="fas fa-box"></i>
+                            <span>In Stock - Economy Range</span>
+                        </div>
+                        <div class="store-detail-item">
+                            <i class="fas fa-phone"></i>
+                            <span>+91 98765 43213</span>
+                        </div>
+                        <div class="store-detail-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>Near Metro Station, Bangalore</span>
+                        </div>
+                    </div>
+                    <a href="https://share.google/cJDBKerkTxsj6ympG" target="_blank" class="btn btn-map">
+                        <i class="fas fa-map-marker-alt"></i> Open in Google Maps
+                    </a>
+                </div>
+            </div>
+
+            <div class="map-section">
+                <h4 class="mb-3"><i class="fas fa-map"></i> Store Locations</h4>
+                <div class="map-container">
+                    <img src="./map.jpg" alt="Store Map" id="mapImage">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function searchStores() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            const storeCards = document.querySelectorAll('.store-card');
+            const noResults = document.getElementById('noResults');
+            let foundAny = false;
+
+            storeCards.forEach(card => {
+                const product = card.getAttribute('data-product');
+                if (searchTerm === '' || product.includes(searchTerm)) {
+                    card.classList.add('show');
+                    foundAny = true;
+                } else {
+                    card.classList.remove('show');
+                }
+            });
+
+            if (foundAny) {
+                noResults.classList.remove('show');
+            } else {
+                noResults.classList.add('show');
+            }
+        }
+
+        // Allow search on Enter key
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchStores();
+            }
+        });
+
+        // Show all stores initially
+        window.addEventListener('load', function() {
+            document.querySelectorAll('.store-card').forEach(card => {
+                card.classList.add('show');
+            });
+        });
+    </script>
+</body>
+</html>
