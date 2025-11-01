@@ -401,6 +401,22 @@
       font-size: 0.9rem;
       opacity: 0.8;
     }
+.map-link {
+  display: inline-block;
+  background: var(--primary);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+  margin-top: 10px;
+  transition: 0.3s;
+}
+
+.map-link:hover {
+  background: var(--primary-dark);
+  transform: scale(1.05);
+}
 
     /* Responsive adjustments */
     @media (max-width: 768px) {
@@ -679,7 +695,15 @@
           <div class="store-address"><i class="fas fa-map-marker-alt"></i> ${address}</div>
           ${distanceText}
           ${pesticideHTML}
+          <div class="store-actions">
+            <a href="https://www.google.com/maps?q=${lat},${lng}" 
+              target="_blank" 
+              class="map-link">
+              <i class="fas fa-map-location-dot"></i> View on Google Maps
+            </a>
+          </div>
         `;
+
         storeCard.onclick = () => focusStore(index);
         storeList.appendChild(storeCard);
       });

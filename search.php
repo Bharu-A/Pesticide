@@ -1,10 +1,24 @@
 <?php
-header("Content-Type: application/json");
+// Always respond as JSON
+header('Content-Type: application/json');
+
+// --- Error handling setup ---
+ini_set('display_errors', 0);           // Don't print PHP errors to output
+ini_set('log_errors', 1);               // Log them instead
+error_reporting(E_ALL);
+
+// Include DB connection
 include 'db_connect.php';
+
+// Verify DB connection
+if (!isset($conn) || !$conn) {
+    http_response_code(500);
+    echo json_encode(["success" => false, "message" => "Database connection failed"]);
+    exit;
+}
 
 // Get crop name from request
 $crop = isset($_GET['crop']) ? trim($_GET['crop']) : '';
-
 if (empty($crop)) {
     echo json_encode(["success" => false, "message" => "Crop name is required"]);
     exit;
@@ -24,17 +38,16 @@ $recommendations = [
     'Potato' => ['Mancozeb', 'Chlorothalonil', 'Metalaxyl']
 ];
 
-// Check if crop exists in recommendations
-if (!array_key_exists(ucfirst(strtolower($crop)), $recommendations)) {
+$key = ucfirst(strtolower($crop));
+if (!array_key_exists($key, $recommendations)) {
     echo json_encode(["success" => false, "message" => "No recommendations found for this crop"]);
     exit;
 }
 
-$crop = ucfirst(strtolower($crop));
-$pesticides = $recommendations[$crop];
-$pesticideList = "'" . implode("','", $pesticides) . "'";
+$pesticides = $recommendations[$key];
+$pesticideList = "'" . implode("','", array_map('addslashes', $pesticides)) . "'";
 
-// Query to get stores with recommended pesticides including descriptions
+// Query stores
 $sql = "
     SELECT 
         s.id AS store_id,
@@ -54,43 +67,43 @@ $sql = "
     ORDER BY s.name, p.name
 ";
 
-$result = $conn->query($sql);
-$stores = [];
+$result = mysqli_query($conn, $sql);
 
-// Group stores and their pesticides
-while ($row = $result->fetch_assoc()) {
-    $storeId = $row['store_id'];
-    
-    if (!isset($stores[$storeId])) {
-        $stores[$storeId] = [
-            'id' => $row['store_id'],
+if (!$result) {
+    http_response_code(500);
+    echo json_encode(["success" => false, "message" => "Query failed", "error" => mysqli_error($conn)]);
+    exit;
+}
+
+// Group stores
+$stores = [];
+while ($row = mysqli_fetch_assoc($result)) {
+    $id = $row['store_id'];
+    if (!isset($stores[$id])) {
+        $stores[$id] = [
+            'id' => $id,
             'name' => $row['store_name'],
             'address' => $row['address'],
-            'lat' => floatval($row['lat']),
-            'lng' => floatval($row['lng']),
+            'lat' => (float) $row['lat'],
+            'lng' => (float) $row['lng'],
             'pesticides' => []
         ];
     }
-    
-    $stores[$storeId]['pesticides'][] = [
+    $stores[$id]['pesticides'][] = [
         'id' => $row['pesticide_id'],
         'name' => $row['pesticide_name'],
         'description' => $row['pesticide_description'],
-        'price' => floatval($row['price']),
+        'price' => (float) $row['price'],
         'category' => $row['category']
     ];
 }
 
-// Convert to simple array
-$storeList = array_values($stores);
-
-// Return JSON response
 echo json_encode([
     "success" => true,
-    "crop" => $crop,
+    "crop" => $key,
     "recommended_pesticides" => $pesticides,
-    "stores" => $storeList
+    "stores" => array_values($stores)
 ]);
 
-$conn->close();
+mysqli_close($conn);
 ?>
