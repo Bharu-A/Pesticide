@@ -696,11 +696,12 @@
           ${distanceText}
           ${pesticideHTML}
           <div class="store-actions">
-            <a href="https://www.google.com/maps?q=${lat},${lng}" 
-              target="_blank" 
-              class="map-link">
-              <i class="fas fa-map-location-dot"></i> View on Google Maps
-            </a>
+                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ', ' + address)}"
+          target="_blank"
+          class="map-link">
+          <i class="fas fa-map-location-dot"></i> View on Google Maps
+        </a>
+
           </div>
         `;
 
