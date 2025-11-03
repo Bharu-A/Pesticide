@@ -5,11 +5,6 @@
 SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
 START TRANSACTION;
 SET time_zone = '+00:00';
-/*!40101 SET NAMES utf8mb4 */;
-
--- Database: `pesticide_locator`
-
--- --------------------------------------------------------
 
 CREATE TABLE `pesticides` (
   `id` int(11) NOT NULL,
@@ -17,14 +12,11 @@ CREATE TABLE `pesticides` (
   `crop` varchar(100) DEFAULT NULL,
   `description` text DEFAULT NULL,
   `price` decimal(10,2) DEFAULT NULL,
-=======
   `price` varchar(50) DEFAULT NULL,
->>>>>>> c3d27ba (Added pesticide_locator SQL schema and fertilizer data)
   `category` enum('Branded','Non-Branded') DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- --------------------------------------------------------
 
 CREATE TABLE `stores` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -58,11 +50,9 @@ INSERT INTO `stores` (`name`, `address`, `phone_number`, `map_link`) VALUES
 ('Raitamitra Agro Traders', '5G4C+HFG, Lingsugur, Karnataka 584122', NULL, 'https://share.google/as8JkuQttz5vh2WDq'),
 ('SHREE SANGAMESHWARA KRUSHI KENDRA KALAPUR', 'Road, opposite Bus Stand, Lingsugur, Kalapur, Karnataka 584122', '099020 57390', 'https://share.google/3jrOa5jfX7OAL4kLy');
 COMMIT;
-=======
 COMMIT;
 
 
--- Insert fertilizer data into pesticides table
 INSERT INTO `pesticides` (`id`, `name`, `crop`, `description`, `price`, `category`) VALUES
 (1, 'Urea (46% N)', 'Rice', 'Primary nitrogen source; major brand in South India.', '268', 'Non-Branded'),
 (2, 'Mangalore Chemicals & Fertilizers Ltd (MCF) Urea', 'Rice', 'Primary nitrogen source; major brand in South India.', ' ₹ 268 per 50 kg ', 'Branded'),
