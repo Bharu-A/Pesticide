@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    
     :root {
       --primary: #2e7d32;
       --primary-light: #4caf50;
@@ -489,156 +488,379 @@
     font-size: 0.75rem;
     margin-left: 4px;
   }
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #f4f6f7;
-    margin: 0;
-    padding: 0;
-  }
-  .container {
-    max-width: 1100px;
-    margin: 30px auto;
-    padding: 20px;
-  }
-  .store-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    padding: 16px;
-    margin-bottom: 16px;
-  }
-  .store-name {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #1b5e20;
-  }
-  .store-address {
-    color: #555;
-    margin-bottom: 8px;
-  }
-  .toggle-btn {
-    background: #e8f5e9;
-    border: none;
-    padding: 6px 10px;
-    border-radius: 6px;
-    color: #1b5e20;
-    cursor: pointer;
-    font-size: 0.9rem;
-    margin-top: 8px;
-  }
-  .toggle-btn:hover {
-    background: #c8e6c9;
-  }
-  .pesticide-list {
-    display: none;
-    margin-top: 10px;
-    padding: 10px;
-    border-top: 1px solid #ddd;
-    background: #fafafa;
-    border-radius: 8px;
-  }
-  .pesticide-item {
-    margin-bottom: 8px;
-    display: flex;
-    justify-content: space-between;
-  }
-  .pesticide-info {
-    flex: 1;
-  }
-  .pesticide-name {
-    font-weight: 600;
-    color: #2e7d32;
-    text-decoration: none;
-  }
-  .pesticide-name:hover {
-    text-decoration: underline;
-  }
-  .pesticide-price {
-    color: #1b5e20;
-    font-weight: bold;
-  }
-  .pesticide-category {
-    background: #e0f2f1;
-    color: #004d40;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    margin-left: 4px;
-  }
+
   </style>
 </head>
 <body>
-<div class="container">
-  <h1>Fertilizer & Shop Finder</h1>
-  <input type="text" id="crop" placeholder="Enter crop name (e.g., Rice)" />
-  <button id="searchBtn">Search</button>
+  <header>
+    <div class="container">
+      <div class="header-content">
+        <div class="logo">
+          <i class="fas fa-seedling"></i>
+          <h1>Crop-Based Pesticide Store Locator</h1>
+        </div>
+        <div class="tagline">
+          Find the right pesticides for your crop and nearby stores
+        </div>
+      </div>
+    </div>
+  </header>
 
-  <div id="storeList"></div>
-</div>
+  <div class="container">
+    <section class="search-section">
+      <div class="search-container">
+        <div class="search-box">
+          <input type="text" id="searchBox" placeholder="Enter crop name (e.g. Rice, Cotton, Vegetables)">
+          <button onclick="searchPesticide()">
+            <i class="fas fa-search"></i> Search
+          </button>
+        </div>
+        <div class="suggestions" id="suggestions">
+          <!-- Suggestions will appear here -->
+        </div>
+      </div>
+    </section>
 
-<script>
-document.getElementById('searchBtn').addEventListener('click', () => {
-  const crop = document.getElementById('crop').value.trim();
-  if (!crop) {
-    alert("Please enter a crop name");
-    return;
-  }
-  fetch(`search.php?crop=${encodeURIComponent(crop)}`)
-    .then(res => res.json())
-    .then(data => {
-      const storeList = document.getElementById('storeList');
-      storeList.innerHTML = "";
+    <div class="content">
+      <section class="results-section">
+        <div class="results-header">
+          <div class="results-count" id="resultsCount">Search for a crop to find stores</div>
+          <div class="sort-options">
+           
+          </div>
+        </div>
+        
+        <div class="loading" id="loading">
+          <div class="loading-spinner"></div>
+          <p>Searching for stores...</p>
+        </div>
+        
+        <div class="store-list" id="storeList">
+          <!-- Store cards will appear here -->
+        </div>
+        
+        <div class="no-results" id="noResults" style="display: none;">
+          <i class="fas fa-store-slash"></i>
+          <h3>No stores found</h3>
+          <p>Try searching for a different crop name</p>
+        </div>
+      </section>
 
-      if (!data.success || !data.stores.length) {
-        storeList.innerHTML = `<p>No shops found for ${crop}.</p>`;
+      <section class="map-section">
+        <div id="map"></div>
+      </section>
+    </div>
+  </div>
+
+  <footer>
+    <div class="container">
+      <div class="footer-content">
+        <div class="copyright">
+          &copy; 2025 Crop-Based Pesticide Store Locator. All rights reserved.
+        </div>
+        <div class="footer-links">
+          
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    let map;
+    let markers = [];
+    let userLocation = null;
+    const cropSuggestions = [
+      "Rice", "Cotton", "Vegetables", "Fruits", "Wheat", 
+      "Maize", "Pulses", "Sugarcane", "Tomato", "Potato"
+    ];
+
+    // Initialize the map
+    function initMap() {
+      map = L.map('map').setView([12.9716, 77.5946], 11); // Default to Bengaluru
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 18,
+      }).addTo(map);
+      
+      // Try to get user's location
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            userLocation = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            map.setView([userLocation.lat, userLocation.lng], 13);
+            
+            // Add user location marker
+            L.marker([userLocation.lat, userLocation.lng])
+              .addTo(map)
+              .bindPopup("<b>Your Location</b>")
+              .openPopup();
+          },
+          error => {
+            console.log("Geolocation error: ", error);
+          }
+        );
+      }
+    }
+
+    // Clear all markers from the map
+    function clearMarkers() {
+      markers.forEach(marker => map.removeLayer(marker));
+      markers = [];
+    }
+
+    // Search for pesticide stores based on crop
+    async function searchPesticide() {
+      const crop = document.getElementById("searchBox").value.trim();
+      if (!crop) {
+        alert("Please enter a crop name");
         return;
       }
 
-      data.stores.forEach((store, idx) => {
-        const div = document.createElement('div');
-        div.className = 'store-card';
-        div.innerHTML = `
-          <div class="store-name">${store.name}</div>
-          <div class="store-address">📍 ${store.address}</div>
-          <button class="toggle-btn" data-target="fertilizer-${idx}">Show Fertilizers ▼</button>
-          <div id="fertilizer-${idx}" class="pesticide-list">
-            ${store.pesticides.map(f => `
+      // Show loading state
+      document.getElementById("loading").style.display = "block";
+      document.getElementById("noResults").style.display = "none";
+      document.getElementById("storeList").innerHTML = "";
+      document.getElementById("resultsCount").textContent = "Searching...";
+      
+      try {
+        const response = await fetch(`search.php?crop=${encodeURIComponent(crop)}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+
+        // Hide loading state
+        document.getElementById("loading").style.display = "none";
+        
+        // Clear previous results
+        clearMarkers();
+        
+        if (!data.success || data.stores.length === 0) {
+          document.getElementById("noResults").style.display = "block";
+          document.getElementById("resultsCount").textContent = "0 stores found";
+          return;
+        }
+
+        // Update results count
+        document.getElementById("resultsCount").textContent = `${data.stores.length} stores found for ${data.crop}`;
+        
+        // Display stores
+        displayStores(data.stores);
+        
+        // Add markers to map
+        addMarkersToMap(data.stores);
+        
+        // Fit map to show all markers
+        if (markers.length > 0) {
+          const group = L.featureGroup(markers);
+          map.fitBounds(group.getBounds().pad(0.1));
+        }
+      } catch (error) {
+        console.error("Error fetching stores:", error);
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("noResults").style.display = "block";
+        document.getElementById("noResults").innerHTML = `
+          <i class="fas fa-exclamation-triangle"></i>
+          <h3>Error loading stores</h3>
+          <p>Please check if the server is running and try again</p>
+          <p><small>Error details: ${error.message}</small></p>
+        `;
+      }
+    }
+
+    // Display stores in the results list
+    function displayStores(stores) {
+      const storeList = document.getElementById("storeList");
+      storeList.innerHTML = "";
+      
+      stores.forEach((store, index) => {
+        const { name, address, lat, lng, pesticides } = store;
+        
+        // Calculate distance if user location is available
+        let distanceText = "";
+        if (userLocation) {
+          const distance = calculateDistance(
+            userLocation.lat, userLocation.lng, 
+            parseFloat(lat), parseFloat(lng)
+          );
+          distanceText = `<div class="store-distance"><i class="fas fa-location-arrow"></i> ${distance.toFixed(1)} km away</div>`;
+        }
+        
+        // Create pesticide list HTML
+        let pesticideHTML = "";
+        if (pesticides && pesticides.length > 0) {
+          pesticideHTML = `<div class="pesticide-list">`;
+          pesticides.forEach(pesticide => {
+            pesticideHTML += `
               <div class="pesticide-item">
                 <div class="pesticide-info">
-                  <a href="fertilizer.html?name=${encodeURIComponent(f.name)}" class="pesticide-name">${f.name}</a>
-                  <div class="pesticide-description">${f.description || 'No description available'}</div>
-                </div>
-                <div>
-                  <span class="pesticide-price">₹${f.price}</span>
-                  <span class="pesticide-category">${f.category}</span>
+                  <div class="pesticide-main">
+                    <div class="pesticide-name">${pesticide.name}</div>
+                    <div class="pesticide-description">${pesticide.description || 'Description not available'}</div>
+                  </div>
+                  <div class="pesticide-meta">
+                    <span class="pesticide-price">₹${pesticide.price}</span>
+                    <span class="pesticide-category category-${pesticide.category.toLowerCase()}">${pesticide.category}</span>
+                  </div>
                 </div>
               </div>
-            `).join('')}
+            `;
+          });
+          pesticideHTML += `</div>`;
+        }
+        
+        const storeCard = document.createElement("div");
+        storeCard.className = "store-card";
+        storeCard.innerHTML = `
+          <div class="store-name"><i class="fas fa-store"></i> ${name}</div>
+          <div class="store-address"><i class="fas fa-map-marker-alt"></i> ${address}</div>
+          ${distanceText}
+          ${pesticideHTML}
+          <div class="store-actions">
+                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ', ' + address)}"
+          target="_blank"
+          class="map-link">
+          <i class="fas fa-map-location-dot"></i> View on Google Maps
+        </a>
+
           </div>
         `;
-        storeList.appendChild(div);
-      });
 
-      // Add toggle functionality
-      document.querySelectorAll('.toggle-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const target = document.getElementById(btn.dataset.target);
-          if (target.style.display === 'block') {
-            target.style.display = 'none';
-            btn.innerText = 'Show Fertilizers ▼';
-          } else {
-            target.style.display = 'block';
-            btn.innerText = 'Hide Fertilizers ▲';
-          }
-        });
+        storeCard.onclick = () => focusStore(index);
+        storeList.appendChild(storeCard);
       });
-    })
-    .catch(err => {
-      console.error(err);
-      alert("Error fetching data");
-    });
-});
-</script>
+    }
+
+    // Add markers to the map
+    function addMarkersToMap(stores) {
+      stores.forEach((store, index) => {
+        const { name, address, lat, lng, pesticides } = store;
+        
+        // Create pesticide list for popup
+        let pesticideList = "";
+        if (pesticides && pesticides.length > 0) {
+          pesticideList = "<div style='margin: 10px 0; max-height: 200px; overflow-y: auto;'>";
+          pesticides.forEach(p => {
+            pesticideList += `
+              <div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0;">
+                <div style="font-weight: bold; color: #2e7d32;">${p.name}</div>
+                <div style="font-size: 0.8rem; color: #666; margin: 2px 0;">${p.description || 'Description not available'}</div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                  <span style="font-weight: bold;">₹${p.price}</span>
+                  <span style="background: ${p.category === 'Organic' ? '#e8f5e9' : '#ffebee'}; 
+                        color: ${p.category === 'Organic' ? '#2e7d32' : '#c62828'}; 
+                        padding: 1px 6px; border-radius: 10px; font-size: 0.7rem;">
+                    ${p.category}
+                  </span>
+                </div>
+              </div>
+            `;
+          });
+          pesticideList += "</div>";
+        }
+        
+        const marker = L.marker([lat, lng])
+          .bindPopup(`
+            <div style="min-width: 280px; max-width: 350px;">
+              <h3 style="margin: 0 0 8px; color: var(--primary)">${name}</h3>
+              <p style="margin: 0 0 10px; color: #666; font-size: 0.9rem;">${address}</p>
+              ${pesticides && pesticides.length > 0 ? 
+                `<div style="margin: 15px 0 5px; font-weight: bold; color: #333;">Available Pesticides:</div>${pesticideList}` : 
+                "<p style='color: #666; font-style: italic;'>No pesticides available</p>"}
+              <button onclick="focusStore(${index})" style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 10px;">Available</button>
+            </div>
+          `)
+          .addTo(map);
+        
+        markers.push(marker);
+      });
+    }
+
+    // Focus on a specific store
+    function focusStore(index) {
+      const marker = markers[index];
+      map.setView(marker.getLatLng(), 15);
+      marker.openPopup();
+
+      // Highlight the selected store card
+      const cards = document.querySelectorAll(".store-card");
+      cards.forEach((card, i) => {
+        card.classList.toggle("active", i === index);
+      });
+    }
+
+    // Calculate distance between two coordinates (Haversine formula)
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371; // Earth's radius in km
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    // Show crop suggestions
+    function showSuggestions() {
+      const input = document.getElementById("searchBox").value.toLowerCase();
+      const suggestionsContainer = document.getElementById("suggestions");
+      
+      if (input.length < 2) {
+        suggestionsContainer.style.display = "none";
+        return;
+      }
+      
+      const filteredSuggestions = cropSuggestions.filter(suggestion => 
+        suggestion.toLowerCase().includes(input)
+      );
+      
+      if (filteredSuggestions.length === 0) {
+        suggestionsContainer.style.display = "none";
+        return;
+      }
+      
+      suggestionsContainer.innerHTML = filteredSuggestions
+        .map(suggestion => `<div class="suggestion-item" onclick="selectSuggestion('${suggestion}')">${suggestion}</div>`)
+        .join("");
+      
+      suggestionsContainer.style.display = "block";
+    }
+
+    // Select a suggestion
+    function selectSuggestion(suggestion) {
+      document.getElementById("searchBox").value = suggestion;
+      document.getElementById("suggestions").style.display = "none";
+      searchPesticide();
+    }
+
+    // Initialize the application
+    window.onload = function() {
+      initMap();
+      
+      // Add event listeners
+      document.getElementById("searchBox").addEventListener("input", showSuggestions);
+      document.getElementById("searchBox").addEventListener("keypress", function(e) {
+        if (e.key === "Enter") {
+          searchPesticide();
+        }
+      });
+      
+      // Close suggestions when clicking outside
+      document.addEventListener("click", function(e) {
+        if (!e.target.closest(".search-container")) {
+          document.getElementById("suggestions").style.display = "none";
+        }
+      });
+    };
+  </script>
 </body>
 </html>
