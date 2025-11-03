@@ -57,9 +57,7 @@ if ($tableExists) {
         SELECT 
             s.id AS store_id,
             s.name AS store_name, 
-            s.address, 
-            COALESCE(s.lat, 0) AS lat, 
-            COALESCE(s.lng, 0) AS lng,
+            s.address,
             p.id AS pesticide_id,
             p.name AS pesticide_name, 
             p.description AS pesticide_description,
