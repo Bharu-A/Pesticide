@@ -3,8 +3,8 @@
 header('Content-Type: application/json');
 
 // --- Error handling setup ---
-ini_set('display_errors', 0);           // Don't print PHP errors to output
-ini_set('log_errors', 1);               // Log them instead
+ini_set('display_errors', 0); // Don't print PHP errors to output
+ini_set('log_errors', 1);     // Log them instead
 error_reporting(E_ALL);
 
 // Include DB connection
@@ -51,17 +51,20 @@ $pesticideList = "'" . implode("','", array_map('addslashes', $pesticides)) . "'
 $tableCheck = mysqli_query($conn, "SHOW TABLES LIKE 'store_pesticides'");
 $tableExists = mysqli_num_rows($tableCheck) > 0;
 
+// --- Build query based on schema ---
 if ($tableExists) {
-    // ✅ Use join if the linking table exists
+    // ✅ Use join if linking table exists
     $sql = "
         SELECT 
             s.id AS store_id,
-            s.name AS store_name, 
+            s.name AS store_name,
             s.address,
+            s.latitude,
+            s.longitude,
             p.id AS pesticide_id,
-            p.name AS pesticide_name, 
+            p.name AS pesticide_name,
             p.description AS pesticide_description,
-            p.price, 
+            p.price,
             p.category
         FROM stores s
         JOIN store_pesticides sp ON s.id = sp.store_id
@@ -70,17 +73,18 @@ if ($tableExists) {
         ORDER BY s.name, p.name
     ";
 } else {
-    
+    // ⚙️ Fallback when mapping table is missing
     $sql = "
         SELECT 
             s.id AS store_id,
-            s.name AS store_name, 
-            s.address
+            s.name AS store_name,
+            s.address,
+            s.latitude,
+            s.longitude
         FROM stores s
         ORDER BY s.name
     ";
 }
-
 
 $result = mysqli_query($conn, $sql);
 
@@ -96,21 +100,27 @@ if ($tableExists) {
     // ✅ When mapping table exists
     while ($row = mysqli_fetch_assoc($result)) {
         $id = $row['store_id'];
+
+        // Ensure latitude & longitude exist
+        $latitude = isset($row['latitude']) ? (float)$row['latitude'] : 0.0;
+        $longitude = isset($row['longitude']) ? (float)$row['longitude'] : 0.0;
+
         if (!isset($stores[$id])) {
             $stores[$id] = [
                 'id' => $id,
                 'name' => $row['store_name'],
                 'address' => $row['address'],
-                'latitude' => (float) $row['latitude'],
-                'longitude' => (float) $row['longitude'],
+                'latitude' => $latitude,
+                'longitude' => $longitude,
                 'pesticides' => []
             ];
         }
+
         $stores[$id]['pesticides'][] = [
             'id' => $row['pesticide_id'],
             'name' => $row['pesticide_name'],
             'description' => $row['pesticide_description'],
-            'price' => (float) $row['price'],
+            'price' => (float)$row['price'],
             'category' => $row['category']
         ];
     }
@@ -119,30 +129,35 @@ if ($tableExists) {
     $allPesticides = [];
     $pesticideQuery = "SELECT * FROM pesticides WHERE name IN ($pesticideList)";
     $pResult = mysqli_query($conn, $pesticideQuery);
+
     if ($pResult) {
         while ($pRow = mysqli_fetch_assoc($pResult)) {
             $allPesticides[] = [
                 'id' => $pRow['id'],
                 'name' => $pRow['name'],
                 'description' => $pRow['description'],
-                'price' => (float) $pRow['price'],
+                'price' => (float)$pRow['price'],
                 'category' => $pRow['category']
             ];
         }
     }
 
     while ($row = mysqli_fetch_assoc($result)) {
+        $latitude = isset($row['latitude']) ? (float)$row['latitude'] : 0.0;
+        $longitude = isset($row['longitude']) ? (float)$row['longitude'] : 0.0;
+
         $stores[] = [
             'id' => $row['store_id'],
             'name' => $row['store_name'],
             'address' => $row['address'],
-            'latitude' => (float) $row['latitude'],
-            'longitude' => (float) $row['longitude'],
+            'latitude' => $latitude,
+            'longitude' => $longitude,
             'pesticides' => $allPesticides
         ];
     }
 }
 
+// ✅ Final JSON response
 echo json_encode([
     "success" => true,
     "crop" => $key,
