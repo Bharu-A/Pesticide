@@ -75,9 +75,7 @@ if ($tableExists) {
         SELECT 
             s.id AS store_id,
             s.name AS store_name, 
-            s.address, 
-            COALESCE(s.lat, 0) AS lat, 
-            COALESCE(s.lng, 0) AS lng
+            s.address
         FROM stores s
         ORDER BY s.name
     ";
