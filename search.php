@@ -58,8 +58,8 @@ if ($tableExists) {
             s.id AS store_id,
             s.name AS store_name, 
             s.address, 
-            s.lat, 
-            s.lng,
+            COALESCE(s.lat, 0) AS lat, 
+            COALESCE(s.lng, 0) AS lng,
             p.id AS pesticide_id,
             p.name AS pesticide_name, 
             p.description AS pesticide_description,
@@ -72,17 +72,19 @@ if ($tableExists) {
         ORDER BY s.name, p.name
     ";
 } else {
-    // ⚙️ Fallback: show all recommended pesticides for each store
+    // ⚙️ Fallback: show all stores even if linking table missing
     $sql = "
         SELECT 
             s.id AS store_id,
             s.name AS store_name, 
-            s.address
-        
+            s.address, 
+            COALESCE(s.lat, 0) AS lat, 
+            COALESCE(s.lng, 0) AS lng
         FROM stores s
         ORDER BY s.name
     ";
 }
+
 
 $result = mysqli_query($conn, $sql);
 
