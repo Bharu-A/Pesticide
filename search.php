@@ -101,8 +101,8 @@ if ($tableExists) {
                 'id' => $id,
                 'name' => $row['store_name'],
                 'address' => $row['address'],
-                'lat' => (float) $row['lat'],
-                'lng' => (float) $row['lng'],
+                'latitude' => (float) $row['latitude'],
+                'longitude' => (float) $row['longitude'],
                 'pesticides' => []
             ];
         }
