@@ -77,9 +77,8 @@ if ($tableExists) {
         SELECT 
             s.id AS store_id,
             s.name AS store_name, 
-            s.address, 
-            s.lat, 
-            s.lng
+            s.address
+        
         FROM stores s
         ORDER BY s.name
     ";
