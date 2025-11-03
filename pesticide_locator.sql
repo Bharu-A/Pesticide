@@ -11,7 +11,6 @@ CREATE TABLE `pesticides` (
   `name` varchar(100) DEFAULT NULL,
   `crop` varchar(100) DEFAULT NULL,
   `description` text DEFAULT NULL,
-  `price` decimal(10,2) DEFAULT NULL,
   `price` varchar(50) DEFAULT NULL,
   `category` enum('Branded','Non-Branded') DEFAULT NULL,
   PRIMARY KEY (`id`)
