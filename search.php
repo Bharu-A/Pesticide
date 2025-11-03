@@ -70,7 +70,7 @@ if ($tableExists) {
         ORDER BY s.name, p.name
     ";
 } else {
-    // ⚙️ Fallback: show all stores even if linking table missing
+    
     $sql = "
         SELECT 
             s.id AS store_id,
