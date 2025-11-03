@@ -461,6 +461,34 @@
         gap: 10px;
       }
     }
+    
+  .pesticide-list {
+    margin-top: 8px;
+    padding: 8px;
+    border-top: 1px solid #eee;
+    background: #fafafa;
+    border-radius: 8px;
+  }
+  .pesticide-item {
+    margin-bottom: 8px;
+  }
+  .pesticide-name {
+    font-weight: 600;
+    color: #2e7d32;
+  }
+  .pesticide-price {
+    color: #1b5e20;
+    font-weight: bold;
+  }
+  .pesticide-category {
+    background: #e0f2f1;
+    color: #004d40;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    margin-left: 4px;
+  }
+
   </style>
 </head>
 <body>
