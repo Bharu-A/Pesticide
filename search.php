@@ -44,36 +44,63 @@ if (isset($aliases[strtolower($crop)])) {
     $key = $aliases[strtolower($crop)];
 }
 
-// Crop => recommended pesticides (same mapping you had)
-// Instead of hardcoding, fetch pesticide list from DB by crop name
+// ✅ New dynamic pesticide selection
+// Fetch all pesticides from DB for this crop, or randomize if crop not found
 $pesticides = [];
-$stmt = $conn->prepare("
-    SELECT DISTINCT p.id, p.name, p.description, p.price, p.category
-    FROM pesticides p
-    JOIN store_pesticides sp ON sp.pesticide_id = p.id
-    WHERE LOWER(sp.crop_name) = LOWER(?)
-");
+$stmt = $conn->prepare("SELECT * FROM pesticides WHERE LOWER(crop)=LOWER(?)");
 $stmt->bind_param("s", $crop);
 $stmt->execute();
 $res = $stmt->get_result();
-
-if ($res && $res->num_rows > 0) {
-    while ($row = $res->fetch_assoc()) {
-        $pesticides[] = $row['name'];
-    }
-} else {
-    echo json_encode(["success" => false, "message" => "No pesticides found for crop '$crop'"]);
-    exit;
+while ($row = $res->fetch_assoc()) {
+    $pesticides[] = $row;
 }
 $stmt->close();
 
-
-if (!array_key_exists($key, $recommendations)) {
-    echo json_encode(["success" => false, "message" => "No recommendations found for this crop"]);
-    exit;
+// If no pesticides found specifically for that crop, fetch random 10 from master list
+if (empty($pesticides)) {
+    $randQuery = $conn->query("SELECT * FROM pesticides ORDER BY RAND() LIMIT 10");
+    while ($row = $randQuery->fetch_assoc()) {
+        $pesticides[] = $row;
+    }
 }
 
-$pesticides = $recommendations[$key];
+// Now get all stores and assign random fertilizers for this crop
+$storeRes = $conn->query("SELECT * FROM stores");
+$stores = [];
+while ($store = $storeRes->fetch_assoc()) {
+    $latitude = isset($store['latitude']) && is_numeric($store['latitude']) ? (float)$store['latitude'] : 0.0;
+    $longitude = isset($store['longitude']) && is_numeric($store['longitude']) ? (float)$store['longitude'] : 0.0;
+
+    // randomly assign 4–6 fertilizers for each store
+    $randKeys = array_rand($pesticides, rand(4, min(6, count($pesticides))));
+    if (!is_array($randKeys)) $randKeys = [$randKeys];
+
+    $randFerts = [];
+    foreach ($randKeys as $k) {
+        $randFerts[] = $pesticides[$k];
+    }
+
+    $stores[] = [
+        'id' => (int)$store['id'],
+        'name' => $store['name'],
+        'address' => $store['address'],
+        'latitude' => $latitude,
+        'longitude' => $longitude,
+        'lat' => $latitude,
+        'lng' => $longitude,
+        'pesticides' => $randFerts
+    ];
+}
+
+// final response
+$response = [
+    "success" => true,
+    "crop" => ucfirst($crop),
+    "stores" => $stores
+];
+echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+exit;
+
 
 // Check if mapping table exists
 $tableExists = false;
@@ -196,53 +223,6 @@ $response = [
     "recommended_pesticides" => $pesticides,
     "stores" => array_values($stores)
 ];
-// --- If store_pesticides table is empty or no direct links exist ---
-// then randomly assign pesticides for this crop from master list
-
-$query = $conn->prepare("SELECT * FROM pesticides WHERE LOWER(crop)=LOWER(?)");
-$query->bind_param("s", $crop);
-$query->execute();
-$result = $query->get_result();
-
-$allPesticides = [];
-while ($row = $result->fetch_assoc()) {
-    $allPesticides[] = $row;
-}
-$query->close();
-
-if (empty($allPesticides)) {
-    // fallback if none for that crop
-    $res = $conn->query("SELECT * FROM pesticides ORDER BY RAND() LIMIT 10");
-    while ($row = $res->fetch_assoc()) $allPesticides[] = $row;
-}
-
-// --- now randomly assign to stores ---
-$storesQuery = $conn->query("SELECT * FROM stores");
-$stores = [];
-while ($store = $storesQuery->fetch_assoc()) {
-    // randomly pick 4 to 6 fertilizers for this store
-    $randomSet = array_rand($allPesticides, rand(4, 6));
-    if (!is_array($randomSet)) $randomSet = [$randomSet];
-    $pList = [];
-    foreach ($randomSet as $idx) {
-        $pList[] = $allPesticides[$idx];
-    }
-
-    $stores[] = [
-        "id" => $store['id'],
-        "name" => $store['name'],
-        "address" => $store['address'],
-        "latitude" => (float)$store['latitude'],
-        "longitude" => (float)$store['longitude'],
-        "pesticides" => $pList
-    ];
-}
-
-echo json_encode([
-    "success" => true,
-    "crop" => ucfirst($crop),
-    "stores" => $stores
-], JSON_PRETTY_PRINT);
 
 $json = json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 if ($json === false) {
