@@ -566,301 +566,153 @@
   </footer>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script>
-    let map;
-    let markers = [];
-    let userLocation = null;
-    const cropSuggestions = [
-      "Rice", "Cotton", "Vegetables", "Fruits", "Wheat", 
-      "Maize", "Pulses", "Sugarcane", "Tomato", "Potato"
-    ];
+  <!-- keep the rest of your index.php HTML as-is; replace the <script> ... </script> block near the bottom with this -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+  let map, markers = [], userLocation = null;
+  const cropSuggestions = ["Rice","Cotton","Vegetables","Fruits","Wheat","Maize","Pulses","Sugarcane","Tomato","Potato"];
 
-    // Initialize the map
-    function initMap() {
-      map = L.map('map').setView([12.9716, 77.5946], 11); // Default to Bengaluru
-      
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 18,
-      }).addTo(map);
-      
-      // Try to get user's location
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          position => {
-            userLocation = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            };
-            map.setView([userLocation.lat, userLocation.lng], 13);
-            
-            // Add user location marker
-            L.marker([userLocation.lat, userLocation.lng])
-              .addTo(map)
-              .bindPopup("<b>Your Location</b>")
-              .openPopup();
-          },
-          error => {
-            console.log("Geolocation error: ", error);
-          }
-        );
-      }
+  function initMap() {
+    map = L.map('map').setView([12.9716, 77.5946], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        map.setView([userLocation.lat, userLocation.lng], 13);
+        L.marker([userLocation.lat, userLocation.lng]).addTo(map).bindPopup("Your Location");
+      }, err => {
+        // ignore geolocation errors silently
+        console.warn("Geolocation error:", err);
+      });
     }
+  }
 
-    // Clear all markers from the map
-    function clearMarkers() {
-      markers.forEach(marker => map.removeLayer(marker));
-      markers = [];
-    }
+  function clearMarkers() {
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
+  }
 
-    // Search for pesticide stores based on crop
-    async function searchPesticide() {
-      const crop = document.getElementById("searchBox").value.trim();
-      if (!crop) {
-        alert("Please enter a crop name");
-        return;
-      }
+  async function searchPesticide() {
+    const crop = document.getElementById("searchBox").value.trim();
+    if (!crop) return alert("Please enter a crop name");
 
-      // Show loading state
-      document.getElementById("loading").style.display = "block";
-      document.getElementById("noResults").style.display = "none";
-      document.getElementById("storeList").innerHTML = "";
-      document.getElementById("resultsCount").textContent = "Searching...";
-      
-      try {
-        const response = await fetch(`search.php?crop=${encodeURIComponent(crop)}`);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
+    document.getElementById("loading").style.display = "block";
+    document.getElementById("storeList").innerHTML = "";
+    document.getElementById("resultsCount").textContent = "Searching...";
 
-        // Hide loading state
-        document.getElementById("loading").style.display = "none";
-        
-        // Clear previous results
-        clearMarkers();
-        
-        if (!data.success || data.stores.length === 0) {
-          document.getElementById("noResults").style.display = "block";
-          document.getElementById("resultsCount").textContent = "0 stores found";
-          return;
-        }
+    try {
+      // NOTE: fetch the backend endpoint we have (search.php)
+      const res = await fetch(`search.php?crop=${encodeURIComponent(crop)}`);
+      if (!res.ok) throw new Error('Network response was not ok: ' + res.status);
+      const data = await res.json();
+      document.getElementById("loading").style.display = "none";
+      clearMarkers();
 
-        // Update results count
-        document.getElementById("resultsCount").textContent = `${data.stores.length} stores found for ${data.crop}`;
-        
-        // Display stores
-        displayStores(data.stores);
-        
-        // Add markers to map
-        addMarkersToMap(data.stores);
-        
-        // Fit map to show all markers
-        if (markers.length > 0) {
-          const group = L.featureGroup(markers);
-          map.fitBounds(group.getBounds().pad(0.1));
-        }
-      } catch (error) {
-        console.error("Error fetching stores:", error);
-        document.getElementById("loading").style.display = "none";
+      if (!data.success || !data.stores || data.stores.length === 0) {
         document.getElementById("noResults").style.display = "block";
-        document.getElementById("noResults").innerHTML = `
-          <i class="fas fa-exclamation-triangle"></i>
-          <h3>Error loading stores</h3>
-          <p>Please check if the server is running and try again</p>
-          <p><small>Error details: ${error.message}</small></p>
-        `;
+        document.getElementById("resultsCount").textContent = "0 stores found";
+        return;
       }
+
+      document.getElementById("noResults").style.display = "none";
+      document.getElementById("resultsCount").textContent = `${data.stores.length} stores found for ${data.crop}`;
+      displayStores(data.stores);
+      addMarkersToMap(data.stores);
+    } catch (err) {
+      console.error("Error:", err);
+      document.getElementById("loading").style.display = "none";
+      alert("Failed to fetch results. Check console or server logs.");
     }
+  }
 
-    // Display stores in the results list
-    function displayStores(stores) {
-      const storeList = document.getElementById("storeList");
-      storeList.innerHTML = "";
-      
-      stores.forEach((store, index) => {
-        const { name, address, lat, lng, pesticides } = store;
-        
-        // Calculate distance if user location is available
-        let distanceText = "";
-        if (userLocation) {
-          const distance = calculateDistance(
-            userLocation.lat, userLocation.lng, 
-            parseFloat(lat), parseFloat(lng)
-          );
-          distanceText = `<div class="store-distance"><i class="fas fa-location-arrow"></i> ${distance.toFixed(1)} km away</div>`;
-        }
-        
-        // Create pesticide list HTML
-        let pesticideHTML = "";
-        if (pesticides && pesticides.length > 0) {
-          pesticideHTML = `<div class="pesticide-list">`;
-          pesticides.forEach(pesticide => {
-            pesticideHTML += `
-              <div class="pesticide-item">
-                <div class="pesticide-info">
-                  <div class="pesticide-main">
-                    <div class="pesticide-name">${pesticide.name}</div>
-                    <div class="pesticide-description">${pesticide.description || 'Description not available'}</div>
-                  </div>
-                  <div class="pesticide-meta">
-                    <span class="pesticide-price">₹${pesticide.price}</span>
-                    <span class="pesticide-category category-${pesticide.category.toLowerCase()}">${pesticide.category}</span>
-                  </div>
-                </div>
-              </div>
-            `;
-          });
-          pesticideHTML += `</div>`;
-        }
-        
-        const storeCard = document.createElement("div");
-        storeCard.className = "store-card";
-        storeCard.innerHTML = `
-          <div class="store-name"><i class="fas fa-store"></i> ${name}</div>
-          <div class="store-address"><i class="fas fa-map-marker-alt"></i> ${address}</div>
-          ${distanceText}
-          ${pesticideHTML}
-          <div class="store-actions">
-                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ', ' + address)}"
-          target="_blank"
-          class="map-link">
-          <i class="fas fa-map-location-dot"></i> View on Google Maps
-        </a>
+  function displayStores(stores) {
+    const list = document.getElementById("storeList");
+    list.innerHTML = "";
+    stores.forEach((store, i) => {
+      const name = store.name || store.store_name || 'Unnamed';
+      const address = store.address || '';
+      const latitude = (typeof store.latitude !== 'undefined') ? store.latitude : store.lat;
+      const longitude = (typeof store.longitude !== 'undefined') ? store.longitude : store.lng;
 
-          </div>
-        `;
+      let distanceText = "";
+      if (userLocation && latitude && longitude) {
+        const dist = calculateDistance(userLocation.lat, userLocation.lng, parseFloat(latitude), parseFloat(longitude));
+        distanceText = `<div><i class="fas fa-location-arrow"></i> ${dist.toFixed(1)} km away</div>`;
+      }
 
-        storeCard.onclick = () => focusStore(index);
-        storeList.appendChild(storeCard);
-      });
-    }
+      const storeCard = document.createElement("div");
+      storeCard.className = "store-card";
+      storeCard.innerHTML = `
+        <h3><i class="fas fa-store"></i> ${escapeHtml(name)}</h3>
+        <p><i class="fas fa-map-marker-alt"></i> ${escapeHtml(address)}</p>
+        ${distanceText}
+      `;
+      storeCard.onclick = () => focusStore(i);
+      list.appendChild(storeCard);
+    });
+  }
 
-    // Add markers to the map
-    function addMarkersToMap(stores) {
-      stores.forEach((store, index) => {
-        const { name, address, lat, lng, pesticides } = store;
-        
-        // Create pesticide list for popup
-        let pesticideList = "";
-        if (pesticides && pesticides.length > 0) {
-          pesticideList = "<div style='margin: 10px 0; max-height: 200px; overflow-y: auto;'>";
-          pesticides.forEach(p => {
-            pesticideList += `
-              <div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0;">
-                <div style="font-weight: bold; color: #2e7d32;">${p.name}</div>
-                <div style="font-size: 0.8rem; color: #666; margin: 2px 0;">${p.description || 'Description not available'}</div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
-                  <span style="font-weight: bold;">₹${p.price}</span>
-                  <span style="background: ${p.category === 'Organic' ? '#e8f5e9' : '#ffebee'}; 
-                        color: ${p.category === 'Organic' ? '#2e7d32' : '#c62828'}; 
-                        padding: 1px 6px; border-radius: 10px; font-size: 0.7rem;">
-                    ${p.category}
-                  </span>
-                </div>
-              </div>
-            `;
-          });
-          pesticideList += "</div>";
-        }
-        
-        const marker = L.marker([lat, lng])
-          .bindPopup(`
-            <div style="min-width: 280px; max-width: 350px;">
-              <h3 style="margin: 0 0 8px; color: var(--primary)">${name}</h3>
-              <p style="margin: 0 0 10px; color: #666; font-size: 0.9rem;">${address}</p>
-              ${pesticides && pesticides.length > 0 ? 
-                `<div style="margin: 15px 0 5px; font-weight: bold; color: #333;">Available Pesticides:</div>${pesticideList}` : 
-                "<p style='color: #666; font-style: italic;'>No pesticides available</p>"}
-              <button onclick="focusStore(${index})" style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 10px;">Available</button>
-            </div>
-          `)
-          .addTo(map);
-        
+  function addMarkersToMap(stores) {
+    clearMarkers();
+    stores.forEach((s, i) => {
+      const lat = (typeof s.latitude !== 'undefined') ? parseFloat(s.latitude) : parseFloat(s.lat || 0);
+      const lng = (typeof s.longitude !== 'undefined') ? parseFloat(s.longitude) : parseFloat(s.lng || 0);
+      if (isFinite(lat) && isFinite(lng) && lat !== 0 && lng !== 0) {
+        const marker = L.marker([lat, lng]).addTo(map);
+        const name = s.name || s.store_name || '';
+        const address = s.address || '';
+        // build small popup
+        const pesticideList = (s.pesticides || []).slice(0,6).map(p => `<li>${escapeHtml(p.name || p.pesticide_name || '')} ${p.price ? '- ₹'+escapeHtml(String(p.price)) : ''}</li>`).join('');
+        marker.bindPopup(`<b>${escapeHtml(name)}</b><br>${escapeHtml(address)}<br><ul>${pesticideList}</ul>`);
         markers.push(marker);
-      });
-    }
-
-    // Focus on a specific store
-    function focusStore(index) {
-      const marker = markers[index];
-      map.setView(marker.getLatLng(), 15);
-      marker.openPopup();
-
-      // Highlight the selected store card
-      const cards = document.querySelectorAll(".store-card");
-      cards.forEach((card, i) => {
-        card.classList.toggle("active", i === index);
-      });
-    }
-
-    // Calculate distance between two coordinates (Haversine formula)
-    function calculateDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371; // Earth's radius in km
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = 
-        Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-        Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
-    }
-
-    // Show crop suggestions
-    function showSuggestions() {
-      const input = document.getElementById("searchBox").value.toLowerCase();
-      const suggestionsContainer = document.getElementById("suggestions");
-      
-      if (input.length < 2) {
-        suggestionsContainer.style.display = "none";
-        return;
       }
-      
-      const filteredSuggestions = cropSuggestions.filter(suggestion => 
-        suggestion.toLowerCase().includes(input)
-      );
-      
-      if (filteredSuggestions.length === 0) {
-        suggestionsContainer.style.display = "none";
-        return;
-      }
-      
-      suggestionsContainer.innerHTML = filteredSuggestions
-        .map(suggestion => `<div class="suggestion-item" onclick="selectSuggestion('${suggestion}')">${suggestion}</div>`)
-        .join("");
-      
-      suggestionsContainer.style.display = "block";
-    }
+    });
+  }
 
-    // Select a suggestion
-    function selectSuggestion(suggestion) {
-      document.getElementById("searchBox").value = suggestion;
-      document.getElementById("suggestions").style.display = "none";
-      searchPesticide();
-    }
+  function focusStore(i) {
+    if (!markers[i]) return;
+    map.setView(markers[i].getLatLng(), 15);
+    markers[i].openPopup();
+  }
 
-    // Initialize the application
-    window.onload = function() {
-      initMap();
-      
-      // Add event listeners
-      document.getElementById("searchBox").addEventListener("input", showSuggestions);
-      document.getElementById("searchBox").addEventListener("keypress", function(e) {
-        if (e.key === "Enter") {
-          searchPesticide();
-        }
-      });
-      
-      // Close suggestions when clicking outside
-      document.addEventListener("click", function(e) {
-        if (!e.target.closest(".search-container")) {
-          document.getElementById("suggestions").style.display = "none";
-        }
-      });
-    };
-  </script>
+  function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  function showSuggestions() {
+    const input = document.getElementById("searchBox").value.toLowerCase();
+    const box = document.getElementById("suggestions");
+    if (input.length < 2) return box.style.display = "none";
+    const matches = cropSuggestions.filter(s => s.toLowerCase().includes(input));
+    if (matches.length === 0) { box.innerHTML = ""; box.style.display = "none"; return; }
+    box.innerHTML = matches.map(m => `<div class="suggestion-item" onclick="selectSuggestion('${m}')">${m}</div>`).join("");
+    box.style.display = "block";
+  }
+
+  function selectSuggestion(s) {
+    document.getElementById("searchBox").value = s;
+    document.getElementById("suggestions").style.display = "none";
+    searchPesticide();
+  }
+
+  function escapeHtml(str) {
+    return String(str || '').replace(/[&<>"'\/]/g, function (s) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;'}[s];
+    });
+  }
+
+  window.onload = function() {
+    initMap();
+    document.getElementById("searchBox").addEventListener("input", showSuggestions);
+    document.getElementById("searchBox").addEventListener("keypress", e => { if (e.key === "Enter") searchPesticide(); });
+    document.addEventListener("click", e => { if (!e.target.closest(".search-container")) document.getElementById("suggestions").style.display = "none"; });
+  };
+</script>
+
 </body>
 </html>
