@@ -7,7 +7,7 @@ START TRANSACTION;
 SET time_zone = '+00:00';
 
 CREATE TABLE `pesticides` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) DEFAULT NULL,
   `crop` varchar(100) DEFAULT NULL,
   `description` text DEFAULT NULL,
@@ -15,7 +15,6 @@ CREATE TABLE `pesticides` (
   `category` enum('Branded','Non-Branded') DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 
 CREATE TABLE `stores` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -31,31 +30,27 @@ CREATE TABLE `stores` (
 INSERT INTO `stores` (`name`, `address`, `phone_number`, `map_link`, `latitude`, `longitude`) VALUES
 ('Sri ananth agro agencies', 'Jevargi - Chamarajanagar Rd, P.W.D. Camp, Sindhanur, Karnataka 584128', '99801 55505', 'https://share.google/w28PjgyFXOOHCYT5k', 15.7830386, 76.7664126),
 ('SRI SIDDIGANAPATI ENTERPRISES', 'Kunnatagi Camp, SINDHANUR, Karnataka 584128', '99726 84140', 'https://share.google/tRqkECmqgWKmywIsF', 15.8446673, 76.7244751),
-('Jai Kisan Engineering', 'Opp. Dollars Colony, P.W.D. Camp, Sindhanur, Karnataka 584128', '98453 45233', 'https://share.google/RNInJnGD0UfmMWe5n', 15.7912266, 76.7726224),
-('Sreedhar Agro Agencies', 'Shop no.55, New APMC Yard, Kushtagi Rd, Sindhanur, Karnataka 584128', '94481 23310', 'https://share.google/YF8P99S3CAJn0JcZe', 15.7664682, 76.7442776),
-('Kartikeya Traders', '44, hedigibal camp, kolbal post, Sindhanur, SINDHANUR, Karnataka 584128', '7483509603', 'https://share.google/kizdGJQN17sxeFQDg', 15.8704563, 76.6401345),
-('SRI DODDABASAVESHWARA TRADERS', 'QP8Q+92J, Kushtagi Rd, Sindhanur, Karnataka 584128', '85352 22677', 'https://share.google/KsaGEHv2CE9WpMW3g', 15.7659709, 76.7375117),
-('SRI VASANTHM TRADERS', 'R.G. Road, JAWALAGERA-584143 Tq:Sindhanur, 584143', '8217369981', 'https://share.google/G95HRr7ueNCIcDTkC', 15.8616858, 76.8143679),
-('DSR Corporation', 'QP9W+FX6, Sindhanur, Karnataka 584128', '85352 23388', 'https://share.google/vOlXBz7sZOo4kn2NS', 15.7686700, 76.7474043),
-('Srishaila Mallekarjuna Agro Agences', 'Shop No 3, near by Nataraj Colony, Nataraj Colony, Raichur, Sindhanur, Karnataka 584128', '98808 73765', 'https://share.google/9vHBzfMULTuaR1fWF', 15.7722363, 76.7519786),
-('Sri Raghavendra Agro Mart', 'Basavana Bhavi Chowk, 12-1-81/4, Gunj Rd, Jalal Nagar, Raichur, Karnataka 584102', '90084 90059', 'https://share.google/W2u9IkfDKgoYjpVKG', 16.2113390, 77.3588665),
-('SAGAR ENTERPRISES', 'Basavana, Jodi Bhavi Road, Raichur, Karnataka 584102', NULL, 'https://share.google/uxq4nLxNg1btQ33RW', 16.2116424, 77.3589037),
+('Jai Kisan Engineering', 'Opp. Dollars Colony, P.W.D. Camp, Sindhanur, Karnataka 584128', '98453 45233', 'https://share.google/RNInJnGD0UfmMWe5n', 15.7912266, 76.7726224), 
+('Sreedhar Agro Agencies', 'Shop no.55, New APMC Yard, Kushtagi Rd, Sindhanur, Karnataka 584128', '94481 23310', 'https://share.google/YF8P99S3CAJn0JcZe', 15.7664682, 76.7442776), 
+('Kartikeya Traders', '44, hedigibal camp, kolbal post, Sindhanur, SINDHANUR, Karnataka 584128', '7483509603', 'https://share.google/kizdGJQN17sxeFQDg', 15.8704563, 76.6401345), 
+('SRI DODDABASAVESHWARA TRADERS', 'QP8Q+92J, Kushtagi Rd, Sindhanur, Karnataka 584128', '85352 22677', 'https://share.google/KsaGEHv2CE9WpMW3g', 15.7659709, 76.7375117), 
+('SRI VASANTHM TRADERS', 'R.G. Road, JAWALAGERA-584143 Tq:Sindhanur, 584143', '8217369981', 'https://share.google/G95HRr7ueNCIcDTkC', 15.8616858, 76.8143679), 
+('DSR Corporation', 'QP9W+FX6, Sindhanur, Karnataka 584128', '85352 23388', 'https://share.google/vOlXBz7sZOo4kn2NS', 15.7686700, 76.7474043), 
+('Srishaila Mallekarjuna Agro Agences', 'Shop No 3, near by Nataraj Colony, Nataraj Colony, Raichur, Sindhanur, Karnataka 584128', '98808 73765', 'https://share.google/9vHBzfMULTuaR1fWF', 15.7722363, 76.7519786), 
+('Sri Raghavendra Agro Mart', 'Basavana Bhavi Chowk, 12-1-81/4, Gunj Rd, Jalal Nagar, Raichur, Karnataka 584102', '90084 90059', 'https://share.google/W2u9IkfDKgoYjpVKG', 16.2113390, 77.3588665), 
+('SAGAR ENTERPRISES', 'Basavana, Jodi Bhavi Road, Raichur, Karnataka 584102', '8073273628', 'https://share.google/uxq4nLxNg1btQ33RW', 16.2116424, 77.3589037), 
 ('NAMMA GROMOR RAICHUR', 'Haji Colony, Raichur, Karnataka 584102', '97428 22792', 'https://share.google/IlBdUzIXVtep4ENF3', 16.2110342, 77.3508846),
-('Sri Swamy Agro Agencies', 'Sri Swamy Agro Agencies, Basavan Bavi Circle, Karnataka 584102', '74062 82835', 'https://share.google/OyoWk7rYFr0BfThYd', 16.2139787, 77.3592075),
-('Indian Agro Centre', 'Shop No: Poornima, Thaetre Complex, Gunj Main Rd, Jalal Nagar, Raichur, Karnataka 584102', '79754 60974', 'https://share.google/YkP2D3sQHPnX9szC4', 16.2124931, 77.3574339),
-('VEENA ENTEPRISES', 'Rajendra Gunj, Raichur, Karnataka 584102', '94480 22655', 'https://share.google/8hyEZeRq2IRmqwzN1', 16.2146819, 77.3591983),
-('Pruthvi Agro Seeds', '6965+RH9, Gunj Main Rd, Jalal Nagar, Basavanabhavi, Raichur, Karnataka 584102', '98864 52174', 'https://share.google/FpGkcM8V3VVQTmXBi', 16.2120488, 77.3589819),
-('Agroes Services Pvt Ltd', 'Shop No.3, 9-20-59, Gadwal dharur road, Ganjipet Colony, Raichur, Karnataka 584102', '99000 92020', 'https://share.google/wgoDZ5isrEeVlvHLi', 16.2097276, 77.3617717),
-('Sri Channabasaveshwara Agro Agency', 'Karadakal, main road, Lingsugur, Karnataka 584122', '97390 73989', 'https://share.google/8TadMRgdG5NBiGlKr', 16.1608345, 76.5192491),
-('A One Agritech', 'Lingsugur, Karnataka 584122', '90086 67844', 'https://share.google/k15Y4RP1WmViefG4D', 16.1576029, 76.5212247),
-('Raitamitra Agro Traders', '5G4C+HFG, Lingsugur, Karnataka 584122', NULL, 'https://share.google/as8JkuQttz5vh2WDq', 16.1564481, 76.5212053),
+('Sri Swamy Agro Agencies', 'Sri Swamy Agro Agencies, Basavan Bavi Circle, Karnataka 584102', '74062 82835', 'https://share.google/OyoWk7rYFr0BfThYd', 16.2139787, 77.3592075), 
+('Indian Agro Centre', 'Shop No: Poornima, Thaetre Complex, Gunj Main Rd, Jalal Nagar, Raichur, Karnataka 584102', '79754 60974', 'https://share.google/YkP2D3sQHPnX9szC4', 16.2124931, 77.3574339), 
+('VEENA ENTEPRISES', 'Rajendra Gunj, Raichur, Karnataka 584102', '94480 22655', 'https://share.google/8hyEZeRq2IRmqwzN1', 16.2146819, 77.3591983), 
+('Pruthvi Agro Seeds', '6965+RH9, Gunj Main Rd, Jalal Nagar, Basavanabhavi, Raichur, Karnataka 584102', '98864 52174', 'https://share.google/FpGkcM8V3VVQTmXBi', 16.2120488, 77.3589819), 
+('Agroes Services Pvt Ltd', 'Shop No.3, 9-20-59, Gadwal dharur road, Ganjipet Colony, Raichur, Karnataka 584102', '99000 92020', 'https://share.google/wgoDZ5isrEeVlvHLi', 16.2097276, 77.3617717), 
+('Sri Channabasaveshwara Agro Agency', 'Karadakal, main road, Lingsugur, Karnataka 584122', '97390 73989', 'https://share.google/8TadMRgdG5NBiGlKr', 16.1608345, 76.5192491), 
+('A One Agritech', 'Lingsugur, Karnataka 584122', '90086 67844', 'https://share.google/k15Y4RP1WmViefG4D', 16.1576029, 76.5212247), 
+('Raitamitra Agro Traders', '5G4C+HFG, Lingsugur, Karnataka 584122', '9480931839', 'https://share.google/as8JkuQttz5vh2WDq', 16.1564481, 76.5212053), 
 ('SHREE SANGAMESHWARA KRUSHI KENDRA KALAPUR', 'Road, opposite Bus Stand, Lingsugur, Kalapur, Karnataka 584122', '99020 57390', 'https://share.google/3jrOa5jfX7OAL4kLy', 16.1958782, 76.5124815);
 
-COMMIT;
-
-
-
-INSERT INTO `pesticides` (`id`, `name`, `crop`, `description`, `price`, `category`) VALUES
+INSERT INTO `pesticides` (`name`, `crop`, `description`, `price`, `category`) VALUES
 (1, 'Urea (46% N)', 'Rice', 'Primary nitrogen source; major brand in South India.', '268', 'Non-Branded'),
 (2, 'Mangalore Chemicals & Fertilizers Ltd (MCF) Urea', 'Rice', 'Primary nitrogen source; major brand in South India.', ' ₹ 268 per 50 kg ', 'Branded'),
 (3, 'Diammonium Phosphate', 'Rice', 'Phosphorus + nitrogen fertilizer; important at transplant stage for rice.', '1250', 'Non-Branded'),
@@ -1056,3 +1051,4 @@ INSERT INTO `pesticides` (`id`, `name`, `crop`, `description`, `price`, `categor
 (998, 'Boron Fertilizer 20% (Krushi Plus or equivalent)', 'Garlic', 'Micronutrient; essential for flowering & fruit set; corrects B deficiency in cereals & horticulture.', '₹ 110–122/kg', 'Branded'),
 (999, 'Magnesium Sulphate (MgSO₄)', 'Garlic', 'Supplies Mg + S; important for chlorophyll formation and grain filling in Mg deficient soils.', '₹ 20–30/kg', 'Non-Branded'),
 (1000, 'Magnesium Sulphate Agriculture Fertilizer (Krushi Plus or generic)', 'Garlic', 'Supplies Mg + S; important for chlorophyll formation and grain filling in Mg deficient soils.', '₹ 24–110/kg', 'Branded');
+COMMIT;
