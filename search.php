@@ -1,10 +1,18 @@
 <?php
-// Always respond as JSON
+// ======================================================================
+// get_pesticides.php
+// Purpose: Fetch pesticide and nearby store details for a given crop.
+// ======================================================================
+
+// --- Response setup ---
 header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');  // Allow frontend access
+header('Access-Control-Allow-Methods: GET');
+header('Access-Control-Allow-Headers: Content-Type');
 
 // --- Error handling setup ---
-ini_set('display_errors', 0); // hide errors from output
-ini_set('log_errors', 1);     // log to php error log
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 error_reporting(E_ALL);
 
 // --- Include DB connection ---
@@ -19,17 +27,20 @@ if (!isset($conn) || !$conn) {
 
 // --- Simple file-based debug logger ---
 function log_debug($msg) {
-    file_put_contents('debug_log.txt', date('Y-m-d H:i:s') . " - $msg\n", FILE_APPEND);
+    $file = 'debug_log.txt';
+    if (is_writable(dirname(__FILE__))) {
+        file_put_contents($file, date('Y-m-d H:i:s') . " - $msg\n", FILE_APPEND);
+    }
 }
 
-// --- Get and clean crop name ---
+// --- Get and sanitize crop name ---
 $crop = isset($_GET['crop']) ? trim($_GET['crop']) : '';
 if (empty($crop)) {
     echo json_encode(["success" => false, "message" => "Crop name is required"]);
     exit;
 }
 
-// --- Crop name normalization and alias mapping ---
+// --- Normalize crop name ---
 $aliases = [
     'paddy' => 'Rice',
     'veg' => 'Vegetables',
@@ -42,7 +53,7 @@ if (isset($aliases[strtolower($crop)])) {
     $key = $aliases[strtolower($crop)];
 }
 
-// --- Crop to pesticide recommendations ---
+// --- Crop to pesticide mapping ---
 $recommendations = [
     'Rice' => ['Fipronil', 'Thiamethoxam', 'Malathion', 'Chlorpyrifos', 'Carbendazim'],
     'Cotton' => ['Cypermethrin', 'Deltamethrin', 'Acephate', 'Imidacloprid', 'Quinalphos'],
@@ -62,9 +73,8 @@ if (!array_key_exists($key, $recommendations)) {
 }
 
 $pesticides = $recommendations[$key];
-$pesticideList = "'" . implode("','", array_map('addslashes', $pesticides)) . "'";
 
-// --- Check if store_pesticides table exists ---
+// --- Check if store_pesticides mapping table exists ---
 $tableExists = false;
 $tableCheck = mysqli_query($conn, "SHOW TABLES LIKE 'store_pesticides'");
 if ($tableCheck && mysqli_num_rows($tableCheck) > 0) {
@@ -72,9 +82,10 @@ if ($tableCheck && mysqli_num_rows($tableCheck) > 0) {
 }
 log_debug("Crop: $key | Table exists: " . ($tableExists ? 'YES' : 'NO'));
 
-// --- Build query based on schema ---
+// --- Prepare SQL query ---
 if ($tableExists) {
-    // ✅ Join tables if mapping exists
+    // ✅ Full join mode
+    $inList = implode(',', array_map(fn($p) => "'" . mysqli_real_escape_string($conn, strtolower($p)) . "'", $pesticides));
     $sql = "
         SELECT 
             s.id AS store_id,
@@ -90,11 +101,11 @@ if ($tableExists) {
         FROM stores s
         JOIN store_pesticides sp ON s.id = sp.store_id
         JOIN pesticides p ON sp.pesticide_id = p.id
-        WHERE LOWER(p.name) IN (" . implode(',', array_map(fn($p) => "LOWER('" . addslashes($p) . "')", $pesticides)) . ")
+        WHERE LOWER(p.name) IN ($inList)
         ORDER BY s.name, p.name
     ";
 } else {
-    // ⚙️ Fallback when mapping table is missing
+    // ⚙️ Fallback when no mapping table exists
     $sql = "
         SELECT 
             s.id AS store_id,
@@ -107,8 +118,9 @@ if ($tableExists) {
     ";
 }
 
-log_debug("Executing SQL: $sql");
+log_debug("SQL Executed: $sql");
 
+// --- Execute SQL query ---
 $result = mysqli_query($conn, $sql);
 if (!$result) {
     http_response_code(500);
@@ -121,11 +133,11 @@ if (!$result) {
     exit;
 }
 
-// --- Build store data ---
+// --- Process Results ---
 $stores = [];
 
 if ($tableExists) {
-    // ✅ Mapping table exists
+    // ✅ With mapping table
     while ($row = mysqli_fetch_assoc($result)) {
         $id = $row['store_id'];
         $latitude = isset($row['latitude']) ? (float)$row['latitude'] : 0.0;
@@ -146,45 +158,45 @@ if ($tableExists) {
             'id' => $row['pesticide_id'],
             'name' => $row['pesticide_name'],
             'description' => $row['pesticide_description'],
-            'price' => (float)$row['price'],
+            'price' => isset($row['price']) ? (float)$row['price'] : null,
             'category' => $row['category']
         ];
     }
 } else {
-    // ⚙️ Fallback mode
-    $allPesticides = [];
-    $pesticideQuery = "SELECT * FROM pesticides WHERE LOWER(name) IN (" . implode(',', array_map(fn($p) => "LOWER('" . addslashes($p) . "')", $pesticides)) . ")";
-    log_debug("Pesticide Fallback Query: $pesticideQuery");
+    // ⚙️ Fallback: link all pesticides to all stores
+    $inList = implode(',', array_map(fn($p) => "'" . mysqli_real_escape_string($conn, strtolower($p)) . "'", $pesticides));
+    $pesticideQuery = "SELECT * FROM pesticides WHERE LOWER(name) IN ($inList)";
+    log_debug("Pesticide fallback query: $pesticideQuery");
 
     $pResult = mysqli_query($conn, $pesticideQuery);
+    $allPesticides = [];
+
     if ($pResult) {
         while ($pRow = mysqli_fetch_assoc($pResult)) {
             $allPesticides[] = [
                 'id' => $pRow['id'],
                 'name' => $pRow['name'],
                 'description' => $pRow['description'],
-                'price' => (float)$pRow['price'],
+                'price' => isset($pRow['price']) ? (float)$pRow['price'] : null,
                 'category' => $pRow['category']
             ];
         }
+        mysqli_free_result($pResult);
     }
 
     while ($row = mysqli_fetch_assoc($result)) {
-        $latitude = isset($row['latitude']) ? (float)$row['latitude'] : 0.0;
-        $longitude = isset($row['longitude']) ? (float)$row['longitude'] : 0.0;
-
         $stores[] = [
             'id' => $row['store_id'],
             'name' => $row['store_name'],
             'address' => $row['address'],
-            'latitude' => $latitude,
-            'longitude' => $longitude,
+            'latitude' => isset($row['latitude']) ? (float)$row['latitude'] : 0.0,
+            'longitude' => isset($row['longitude']) ? (float)$row['longitude'] : 0.0,
             'pesticides' => $allPesticides
         ];
     }
 }
 
-// --- Prepare JSON Response ---
+// --- Build final response ---
 $response = [
     "success" => true,
     "crop" => $key,
@@ -192,7 +204,7 @@ $response = [
     "stores" => array_values($stores)
 ];
 
-// --- Encode safely with error check ---
+// --- Output response safely ---
 $json = json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 if ($json === false) {
     echo json_encode([
@@ -201,10 +213,11 @@ if ($json === false) {
         "error" => json_last_error_msg()
     ]);
     log_debug("JSON Error: " . json_last_error_msg());
-    exit;
+} else {
+    echo $json;
 }
 
-echo $json;
-
+// --- Cleanup ---
+mysqli_free_result($result);
 mysqli_close($conn);
 ?>
