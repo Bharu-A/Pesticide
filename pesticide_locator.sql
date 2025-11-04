@@ -41,7 +41,6 @@ INSERT INTO `stores` (`name`, `address`, `phone_number`, `map_link`, `latitude`,
 ('Raitamitra Agro Traders', '5G4C+HFG, Lingsugur, Karnataka 584122', '9480931839', 'https://share.google/as8JkuQttz5vh2WDq', 16.1564481, 76.5212053), 
 ('SHREE SANGAMESHWARA KRUSHI KENDRA KALAPUR', 'Road, opposite Bus Stand, Lingsugur, Kalapur, Karnataka 584122', '99020 57390', 'https://share.google/3jrOa5jfX7OAL4kLy', 16.1958782, 76.5124815);
 
--- 1️⃣ Create table to map which store sells which pesticide
 CREATE TABLE IF NOT EXISTS store_pesticides (
   id INT AUTO_INCREMENT PRIMARY KEY,
   store_id INT NOT NULL,
