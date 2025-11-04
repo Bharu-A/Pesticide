@@ -6,15 +6,6 @@ SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
 START TRANSACTION;
 SET time_zone = '+00:00';
 
-CREATE TABLE `pesticides` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) DEFAULT NULL,
-  `crop` varchar(100) DEFAULT NULL,
-  `description` text DEFAULT NULL,
-  `price` varchar(50) DEFAULT NULL,
-  `category` enum('Branded','Non-Branded') DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `stores` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -50,7 +41,19 @@ INSERT INTO `stores` (`name`, `address`, `phone_number`, `map_link`, `latitude`,
 ('Raitamitra Agro Traders', '5G4C+HFG, Lingsugur, Karnataka 584122', '9480931839', 'https://share.google/as8JkuQttz5vh2WDq', 16.1564481, 76.5212053), 
 ('SHREE SANGAMESHWARA KRUSHI KENDRA KALAPUR', 'Road, opposite Bus Stand, Lingsugur, Kalapur, Karnataka 584122', '99020 57390', 'https://share.google/3jrOa5jfX7OAL4kLy', 16.1958782, 76.5124815);
 
-INSERT INTO `pesticides` (`name`, `crop`, `description`, `price`, `category`) VALUES
+-- 1️⃣ Create table to map which store sells which pesticide
+CREATE TABLE IF NOT EXISTS store_pesticides (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  store_id INT NOT NULL,
+  pesticide_id INT NOT NULL,
+  crop_name VARCHAR(100),
+  price DECIMAL(10,2),
+  category VARCHAR(50),
+  FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE,
+  FOREIGN KEY (pesticide_id) REFERENCES pesticides(id) ON DELETE CASCADE
+);
+
+INSERT INTO `store_pesticides` (`name`, `crop`, `description`, `price`, `category`) VALUES
 (1, 'Urea (46% N)', 'Rice', 'Primary nitrogen source; major brand in South India.', '268', 'Non-Branded'),
 (2, 'Mangalore Chemicals & Fertilizers Ltd (MCF) Urea', 'Rice', 'Primary nitrogen source; major brand in South India.', ' ₹ 268 per 50 kg ', 'Branded'),
 (3, 'Diammonium Phosphate', 'Rice', 'Phosphorus + nitrogen fertilizer; important at transplant stage for rice.', '1250', 'Non-Branded'),

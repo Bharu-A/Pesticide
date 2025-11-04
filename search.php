@@ -45,18 +45,28 @@ if (isset($aliases[strtolower($crop)])) {
 }
 
 // Crop => recommended pesticides (same mapping you had)
-$recommendations = [
-    'Rice' => ['Fipronil', 'Thiamethoxam', 'Malathion', 'Chlorpyrifos', 'Carbendazim'],
-    'Cotton' => ['Cypermethrin', 'Deltamethrin', 'Acephate', 'Imidacloprid', 'Quinalphos'],
-    'Vegetables' => ['Neem Oil', 'Spinosad', 'Mancozeb', 'Carbendazim', 'Deltamethrin', 'Acephate'],
-    'Fruits' => ['Captan', 'Copper Oxychloride', 'Sulphur Dust', 'Mancozeb', 'Malathion', 'Carbaryl'],
-    'Wheat' => ['Glyphosate', 'Pendimethalin', 'Carbendazim', 'Dimethoate'],
-    'Maize' => ['Atrazine', 'Imidacloprid', 'Carbendazim', '2,4-D'],
-    'Pulses' => ['Thiamethoxam', 'Dimethoate', 'Malathion', 'Neem Oil', 'Quinalphos'],
-    'Sugarcane' => ['Fipronil', 'Atrazine', 'Imidacloprid'],
-    'Tomato' => ['Mancozeb', 'Chlorothalonil', 'Imidacloprid'],
-    'Potato' => ['Mancozeb', 'Chlorothalonil', 'Metalaxyl']
-];
+// Instead of hardcoding, fetch pesticide list from DB by crop name
+$pesticides = [];
+$stmt = $conn->prepare("
+    SELECT DISTINCT p.id, p.name, p.description, p.price, p.category
+    FROM pesticides p
+    JOIN store_pesticides sp ON sp.pesticide_id = p.id
+    WHERE LOWER(sp.crop_name) = LOWER(?)
+");
+$stmt->bind_param("s", $crop);
+$stmt->execute();
+$res = $stmt->get_result();
+
+if ($res && $res->num_rows > 0) {
+    while ($row = $res->fetch_assoc()) {
+        $pesticides[] = $row['name'];
+    }
+} else {
+    echo json_encode(["success" => false, "message" => "No pesticides found for crop '$crop'"]);
+    exit;
+}
+$stmt->close();
+
 
 if (!array_key_exists($key, $recommendations)) {
     echo json_encode(["success" => false, "message" => "No recommendations found for this crop"]);
