@@ -196,6 +196,53 @@ $response = [
     "recommended_pesticides" => $pesticides,
     "stores" => array_values($stores)
 ];
+// --- If store_pesticides table is empty or no direct links exist ---
+// then randomly assign pesticides for this crop from master list
+
+$query = $conn->prepare("SELECT * FROM pesticides WHERE LOWER(crop)=LOWER(?)");
+$query->bind_param("s", $crop);
+$query->execute();
+$result = $query->get_result();
+
+$allPesticides = [];
+while ($row = $result->fetch_assoc()) {
+    $allPesticides[] = $row;
+}
+$query->close();
+
+if (empty($allPesticides)) {
+    // fallback if none for that crop
+    $res = $conn->query("SELECT * FROM pesticides ORDER BY RAND() LIMIT 10");
+    while ($row = $res->fetch_assoc()) $allPesticides[] = $row;
+}
+
+// --- now randomly assign to stores ---
+$storesQuery = $conn->query("SELECT * FROM stores");
+$stores = [];
+while ($store = $storesQuery->fetch_assoc()) {
+    // randomly pick 4 to 6 fertilizers for this store
+    $randomSet = array_rand($allPesticides, rand(4, 6));
+    if (!is_array($randomSet)) $randomSet = [$randomSet];
+    $pList = [];
+    foreach ($randomSet as $idx) {
+        $pList[] = $allPesticides[$idx];
+    }
+
+    $stores[] = [
+        "id" => $store['id'],
+        "name" => $store['name'],
+        "address" => $store['address'],
+        "latitude" => (float)$store['latitude'],
+        "longitude" => (float)$store['longitude'],
+        "pesticides" => $pList
+    ];
+}
+
+echo json_encode([
+    "success" => true,
+    "crop" => ucfirst($crop),
+    "stores" => $stores
+], JSON_PRETTY_PRINT);
 
 $json = json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 if ($json === false) {

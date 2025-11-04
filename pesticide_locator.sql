@@ -59,9 +59,10 @@ CREATE TABLE IF NOT EXISTS store_pesticides (
   category VARCHAR(50),
   FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE,
   FOREIGN KEY (pesticide_id) REFERENCES pesticides(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB;
 
-INSERT INTO `store_pesticides` (`name`, `crop`, `description`, `price`, `category`) VALUES
+
+INSERT INTO `pesticides` (`name`, `crop`, `description`, `price`, `category`) VALUES
 ('Urea (46% N)', 'Rice', 'Primary nitrogen source; major brand in South India.', '268', 'Non-Branded'),
 ('Mangalore Chemicals & Fertilizers Ltd (MCF) Urea', 'Rice', 'Primary nitrogen source; major brand in South India.', ' ₹ 268 per 50 kg ', 'Branded'),
 ('Diammonium Phosphate', 'Rice', 'Phosphorus + nitrogen fertilizer; important at transplant stage for rice.', '1250', 'Non-Branded'),
