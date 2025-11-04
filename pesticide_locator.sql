@@ -6,6 +6,15 @@ SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
 START TRANSACTION;
 SET time_zone = '+00:00';
 
+CREATE TABLE `pesticides` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) DEFAULT NULL,
+  `crop` varchar(100) DEFAULT NULL,
+  `description` text DEFAULT NULL,
+  `price` varchar(50) DEFAULT NULL,
+  `category` enum('Branded','Non-Branded') DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `stores` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
