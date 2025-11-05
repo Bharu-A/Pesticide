@@ -488,6 +488,37 @@
     font-size: 0.75rem;
     margin-left: 4px;
   }
+.show-map-btn {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  margin-top: 6px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.show-map-btn:hover {
+  background: #45a049;
+}
+
+.fert-section {
+  margin-top: 8px;
+  background: #f9f9f9;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.fert-section h4 {
+  margin-bottom: 4px;
+  color: #2e7d32;
+}
+
+.fert-section ul {
+  padding-left: 18px;
+  margin: 4px 0 8px;
+}
 
   </style>
 </head>
@@ -568,6 +599,7 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <!-- keep the rest of your index.php HTML as-is; replace the <script> ... </script> block near the bottom with this -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
   let map, markers = [], userLocation = null;
   const cropSuggestions = ["Rice","Cotton","Vegetables","Fruits","Wheat","Maize","Pulses","Sugarcane","Tomato","Potato"];
@@ -581,9 +613,6 @@
         userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         map.setView([userLocation.lat, userLocation.lng], 13);
         L.marker([userLocation.lat, userLocation.lng]).addTo(map).bindPopup("Your Location");
-      }, err => {
-        // ignore geolocation errors silently
-        console.warn("Geolocation error:", err);
       });
     }
   }
@@ -602,7 +631,6 @@
     document.getElementById("resultsCount").textContent = "Searching...";
 
     try {
-      // NOTE: fetch the backend endpoint we have (search.php)
       const res = await fetch(`search.php?crop=${encodeURIComponent(crop)}`);
       if (!res.ok) throw new Error('Network response was not ok: ' + res.status);
       const data = await res.json();
@@ -630,10 +658,10 @@
     const list = document.getElementById("storeList");
     list.innerHTML = "";
     stores.forEach((store, i) => {
-      const name = store.name || store.store_name || 'Unnamed';
+      const name = store.name || 'Unnamed';
       const address = store.address || '';
-      const latitude = (typeof store.latitude !== 'undefined') ? store.latitude : store.lat;
-      const longitude = (typeof store.longitude !== 'undefined') ? store.longitude : store.lng;
+      const latitude = store.latitude ?? store.lat;
+      const longitude = store.longitude ?? store.lng;
 
       let distanceText = "";
       if (userLocation && latitude && longitude) {
@@ -641,14 +669,28 @@
         distanceText = `<div><i class="fas fa-location-arrow"></i> ${dist.toFixed(1)} km away</div>`;
       }
 
+      const branded = (store.branded || []).map(f => `
+        <li><b>${escapeHtml(f.name)}</b> — ${escapeHtml(f.price || '')}</li>
+      `).join('') || '<li>No branded fertilizers</li>';
+
+      const nonBranded = (store.non_branded || []).map(f => `
+        <li><b>${escapeHtml(f.name)}</b> — ${escapeHtml(f.price || '')}</li>
+      `).join('') || '<li>No non-branded fertilizers</li>';
+
       const storeCard = document.createElement("div");
       storeCard.className = "store-card";
       storeCard.innerHTML = `
         <h3><i class="fas fa-store"></i> ${escapeHtml(name)}</h3>
         <p><i class="fas fa-map-marker-alt"></i> ${escapeHtml(address)}</p>
         ${distanceText}
+        <button class="show-map-btn" onclick="focusStore(${i})"><i class='fas fa-map'></i> Show on Map</button>
+        <div class="fert-section">
+          <h4>Branded Fertilizers</h4>
+          <ul>${branded}</ul>
+          <h4>Non-Branded Fertilizers</h4>
+          <ul>${nonBranded}</ul>
+        </div>
       `;
-      storeCard.onclick = () => focusStore(i);
       list.appendChild(storeCard);
     });
   }
@@ -656,15 +698,20 @@
   function addMarkersToMap(stores) {
     clearMarkers();
     stores.forEach((s, i) => {
-      const lat = (typeof s.latitude !== 'undefined') ? parseFloat(s.latitude) : parseFloat(s.lat || 0);
-      const lng = (typeof s.longitude !== 'undefined') ? parseFloat(s.longitude) : parseFloat(s.lng || 0);
+      const lat = parseFloat(s.latitude ?? s.lat ?? 0);
+      const lng = parseFloat(s.longitude ?? s.lng ?? 0);
       if (isFinite(lat) && isFinite(lng) && lat !== 0 && lng !== 0) {
         const marker = L.marker([lat, lng]).addTo(map);
-        const name = s.name || s.store_name || '';
+        const name = s.name || '';
         const address = s.address || '';
-        // build small popup
-        const pesticideList = (s.pesticides || []).slice(0,6).map(p => `<li>${escapeHtml(p.name || p.pesticide_name || '')} ${p.price ? '- ₹'+escapeHtml(String(p.price)) : ''}</li>`).join('');
-        marker.bindPopup(`<b>${escapeHtml(name)}</b><br>${escapeHtml(address)}<br><ul>${pesticideList}</ul>`);
+
+        // Combine both fertilizer types for popup
+        const branded = (s.branded || []).map(p => `<li>${escapeHtml(p.name)} (${p.category})</li>`).join('');
+        const nonBranded = (s.non_branded || []).map(p => `<li>${escapeHtml(p.name)} (${p.category})</li>`).join('');
+        const popupHTML = `
+          <b>${escapeHtml(name)}</b><br>${escapeHtml(address)}<br><b>Branded:</b><ul>${branded}</ul><b>Non-Branded:</b><ul>${nonBranded}</ul>
+        `;
+        marker.bindPopup(popupHTML);
         markers.push(marker);
       }
     });
@@ -701,9 +748,7 @@
   }
 
   function escapeHtml(str) {
-    return String(str || '').replace(/[&<>"'\/]/g, function (s) {
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;'}[s];
-    });
+    return String(str || '').replace(/[&<>"'\/]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;'}[s]));
   }
 
   window.onload = function() {
