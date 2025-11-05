@@ -87,7 +87,10 @@ while ($store = $storeRes->fetch_assoc()) {
         'lat' => $latitude,
         'lng' => $longitude,
         'branded' => $branded,
-        'non_branded' => $nonBranded
+        'non_branded' => $nonBranded,
+        'map_link' => $store['map_link'],
+        'phone_number' => $store['phone_number'],
+
     ];
 }
 

@@ -519,6 +519,39 @@
   padding-left: 18px;
   margin: 4px 0 8px;
 }
+.btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.map-link-btn {
+  background: #2196f3;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+
+.map-link-btn:hover {
+  background: #1976d2;
+}
+
+.show-map-btn {
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.show-map-btn:hover {
+  background: #43a047;
+}
 
   </style>
 </head>
@@ -655,45 +688,38 @@
   }
 
   function displayStores(stores) {
-    const list = document.getElementById("storeList");
-    list.innerHTML = "";
-    stores.forEach((store, i) => {
-      const name = store.name || 'Unnamed';
-      const address = store.address || '';
-      const latitude = store.latitude ?? store.lat;
-      const longitude = store.longitude ?? store.lng;
+  const list = document.getElementById("storeList");
+  list.innerHTML = "";
+  stores.forEach((store, i) => {
+    const name = store.name || "Unnamed Store";
+    const address = store.address || "";
+    const phone = store.phone_number ? `<div><i class="fas fa-phone"></i> ${escapeHtml(store.phone_number)}</div>` : "";
+    const mapLink = store.map_link ? store.map_link : null;
+    const latitude = store.latitude ?? store.lat;
+    const longitude = store.longitude ?? store.lng;
 
-      let distanceText = "";
-      if (userLocation && latitude && longitude) {
-        const dist = calculateDistance(userLocation.lat, userLocation.lng, parseFloat(latitude), parseFloat(longitude));
-        distanceText = `<div><i class="fas fa-location-arrow"></i> ${dist.toFixed(1)} km away</div>`;
-      }
+    let distanceText = "";
+    if (userLocation && latitude && longitude) {
+      const dist = calculateDistance(userLocation.lat, userLocation.lng, parseFloat(latitude), parseFloat(longitude));
+      distanceText = `<div><i class="fas fa-location-arrow"></i> ${dist.toFixed(1)} km away</div>`;
+    }
 
-      const branded = (store.branded || []).map(f => `
-        <li><b>${escapeHtml(f.name)}</b> — ${escapeHtml(f.price || '')}</li>
-      `).join('') || '<li>No branded fertilizers</li>';
+    const storeCard = document.createElement("div");
+    storeCard.className = "store-card";
+    storeCard.innerHTML = `
+      <h3><i class="fas fa-store"></i> ${escapeHtml(name)}</h3>
+      <p><i class="fas fa-map-marker-alt"></i> ${escapeHtml(address)}</p>
+      ${phone}
+      ${distanceText}
+      <div class="btn-row">
+        ${mapLink ? `<a href="${escapeHtml(mapLink)}" target="_blank" class="map-link-btn"><i class="fas fa-map-marked-alt"></i> Open in Google Maps</a>` : ""}
+        <button class="show-map-btn" onclick="focusStore(${i})"><i class="fas fa-map"></i> Show on Map</button>
+      </div>
+    `;
+    list.appendChild(storeCard);
+  });
+}
 
-      const nonBranded = (store.non_branded || []).map(f => `
-        <li><b>${escapeHtml(f.name)}</b> — ${escapeHtml(f.price || '')}</li>
-      `).join('') || '<li>No non-branded fertilizers</li>';
-
-      const storeCard = document.createElement("div");
-      storeCard.className = "store-card";
-      storeCard.innerHTML = `
-        <h3><i class="fas fa-store"></i> ${escapeHtml(name)}</h3>
-        <p><i class="fas fa-map-marker-alt"></i> ${escapeHtml(address)}</p>
-        ${distanceText}
-        <button class="show-map-btn" onclick="focusStore(${i})"><i class='fas fa-map'></i> Show on Map</button>
-        <div class="fert-section">
-          <h4>Branded Fertilizers</h4>
-          <ul>${branded}</ul>
-          <h4>Non-Branded Fertilizers</h4>
-          <ul>${nonBranded}</ul>
-        </div>
-      `;
-      list.appendChild(storeCard);
-    });
-  }
 
   function addMarkersToMap(stores) {
     clearMarkers();
